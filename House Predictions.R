@@ -1,3 +1,15 @@
+# House Prices — Advanced Regression Techniques in R
+#
+# Exploratory modelling script for Kaggle's House Prices competition.
+# This is a legacy learning project kept as a record of feature engineering,
+# exploratory analysis, and regression modelling in R.
+#
+# Expected data files:
+# - data/train.csv
+# - data/test.csv
+#
+# Kaggle dataset: https://www.kaggle.com/competitions/house-prices-advanced-regression-techniques
+
 library(data.table)
 library(Matrix)
 library(xgboost)
@@ -7,15 +19,23 @@ library(plyr)
 library(ggplot2)
 library(stringr)
 library(caret)
-library(ggplot2)
-library(scales) #Used to remove exponential in ggplot2
-library(randomForest)
+library(scales) # Used to remove exponential notation in ggplot2
 library(psych)
 library(corrplot)
 
-train <- read.csv("C:/Users/francisco.alamo/OneDrive - Essex County Council/Desktop/Kaggle Projects/Predict House Prices/train.csv")
+train_path <- file.path("data", "train.csv")
+test_path <- file.path("data", "test.csv")
 
-test <- read.csv("C:/Users/francisco.alamo/OneDrive - Essex County Council/Desktop/Kaggle Projects/Predict House Prices/test.csv")
+if (!file.exists(train_path) || !file.exists(test_path)) {
+  stop(
+    "Missing Kaggle data files. Download train.csv and test.csv from ",
+    "https://www.kaggle.com/competitions/house-prices-advanced-regression-techniques/data ",
+    "and place them in the data/ folder."
+  )
+}
+
+train <- read.csv(train_path)
+test <- read.csv(test_path)
 
 test_labels <- test$Id
 test$Id <- NULL
@@ -70,18 +90,18 @@ ggplot(train[!is.na(train$SalePrice),], aes(x=Alley, y=SalePrice)) +
   scale_y_continuous(breaks= seq(0, 800000, by=100000), labels = comma) +
   geom_label(stat = "count", aes(label = ..count.., y = ..count..))
 
-#Assuming there are not missing values. 
+#Assuming there are not missing values.
 # Alley: Type of alley access to property
 #Could be also consider as a factor
 table(train$Alley)
 sum(is.na(train$Alley))
-train2$Alley[is.na(train$Alley)] <- "Na" 
+train2$Alley[is.na(train$Alley)] <- "Na"
 
 train2$Alley <- as.factor(train2$Alley)
 
 table(train2$Alley)
 
-#PavedDrive 
+#PavedDrive
 table(train$PavedDrive)
 sum(is.na(train$PavedDrive))
 train$PavedDrive[is.na(train$PavedDrive)] <- "Na"
@@ -444,7 +464,7 @@ values <- c("BrkCmn","BrkFace","Stone")
 train2$MasVnrType <- ifelse(train$MasVnrType == "None" & train2$MasVnrArea != 0, sample(values,3),
                             train$MasVnrType)
 
-train2$MasVnrType <- ifelse(is.na(train2$MasVnrType) & train2$MasVnrArea != 0, sample(values,3), 
+train2$MasVnrType <- ifelse(is.na(train2$MasVnrType) & train2$MasVnrArea != 0, sample(values,3),
                             train2$MasVnrType)
 
 train2$MasVnrType[is.na(train2$MasVnrType)] <- "None"
@@ -457,7 +477,7 @@ sum(is.na(train2$MasVnrType))
 #FireplaceQu: Fireplace quality
 table(train$FireplaceQu)
 sum(is.na(train$FireplaceQu))
-train2$FireplaceQu[is.na(train$FireplaceQu)] <- 0 
+train2$FireplaceQu[is.na(train$FireplaceQu)] <- 0
 
 train2$FireplaceQu[train$FireplaceQu == "Ex"] <- 5
 train2$FireplaceQu[train$FireplaceQu == "Gd"] <- 4
@@ -524,12 +544,12 @@ train2$ExterCond <- as.integer(plyr::revalue(train2$ExterCond,
 
 table(train2$ExterCond)
 
-#Garages 
+#Garages
 #Garages 81 missing to none garage
 #Garage year build
 table(train$GarageYrBlt)
 sum(is.na(train$GarageYrBlt))
-train2$GarageYrBlt[is.na(train$GarageYrBlt)] <- 0 
+train2$GarageYrBlt[is.na(train$GarageYrBlt)] <- 0
 
 train2$GarageYrBlt <- as.integer(train2$GarageYrBlt)
 
@@ -549,7 +569,7 @@ table(train$GarageFinish)
 sum(is.na(train$GarageFinish))
 train2$GarageFinish[is.na(train$GarageFinish)] <- 0
 
-train2$GarageFinish <- as.integer(plyr::revalue(train2$GarageFinish, 
+train2$GarageFinish <- as.integer(plyr::revalue(train2$GarageFinish,
                                           c(Unf=1,RFn=2,Fin=3)))
 
 table(train2$GarageFinish)
@@ -590,7 +610,7 @@ train2$GarageArea[is.na(train2$GarageArea)] <- 0
 
 train2$GarageArea <- as.integer(train2$GarageArea)
 
-#House with pool 
+#House with pool
 #Pool quality 1453 move to Na
 table(train$PoolQC)
 sum(is.na(train$PoolQC))
@@ -668,19 +688,19 @@ train2$MSSubClass <- as.factor(train2$MSSubClass)
 
 train2$MSSubClass <- plyr::revalue(train2$MSSubClass, c('20'='1 story 1946+',
                                                                 '30'='1 story 1945-',
-                                                                '40'='1 story unf attic', 
-                                                                '45'='1,5 story unf', 
-                                                                '50'='1,5 story fin', 
-                                                                '60'='2 story 1946+', 
-                                                                '70'='2 story 1945-', 
-                                                                '75'='2,5 story all ages', 
-                                                                '80'='split/multi level', 
+                                                                '40'='1 story unf attic',
+                                                                '45'='1,5 story unf',
+                                                                '50'='1,5 story fin',
+                                                                '60'='2 story 1946+',
+                                                                '70'='2 story 1945-',
+                                                                '75'='2,5 story all ages',
+                                                                '80'='split/multi level',
                                                                 '85'='split foyer',
-                                                                '90'='duplex all style/age', 
+                                                                '90'='duplex all style/age',
                                                                 '120'='1 story PUD 1946+',
-                                                                '150'='1,5 story PUD all', 
+                                                                '150'='1,5 story PUD all',
                                                                 '160'='2 story PUD 1946+',
-                                                                '180'='PUD multilevel', 
+                                                                '180'='PUD multilevel',
                                                                 '190'='2 family conversion'))
 
 
@@ -801,7 +821,7 @@ ggplot(train2[!is.na(train2$SalePrice),], aes(x=RoofMatl, y=SalePrice)) +
   geom_label(stat = "count", aes(label = ..count.., y = ..count..))
 
 #Dwelling
-#Type of dwelling 
+#Type of dwelling
 table(train$BldgType)
 sum(is.na(train$BldgType))
 
@@ -816,7 +836,7 @@ ggplot(train2[!is.na(train2$SalePrice),], aes(x=BldgType, y=SalePrice)) +
 table(train$HouseStyle)
 sum(is.na(train$HouseStyle))
 
-train2$HouseStyle <- as.factor(plyr::revalue(train2$HouseStyle, 
+train2$HouseStyle <- as.factor(plyr::revalue(train2$HouseStyle,
                                              c("1Story"= "1story or 1 1/2",
                                                "1.5Fin"="1story or 1 1/2",
                                                "1.5Unf"="1story or 1 1/2",
@@ -830,7 +850,7 @@ ggplot(train2[!is.na(train2$SalePrice),], aes(x=HouseStyle, y=SalePrice)) +
   geom_bar(stat='summary', fun.y = "median", fill='green') +
   scale_y_continuous(breaks= seq(0, 1000000, by=15000), labels = comma) +
   geom_label(stat = "count", aes(label = ..count.., y = ..count..))
-                                              
+
 table(train2$HouseStyle)
 sum(is.na(train2$HouseStyle))
 
@@ -903,8 +923,8 @@ train2$TotalPorchSF <- as.integer(train2$TotalPorchSF)
 
 cor(train2$SalePrice, train2$TotalPorchSF, use= "pairwise.complete.obs")
 #Total Rooms including bathroom and basement bathrooms
-train2$TotalRooms <- train2$TotRmsAbvGrd - train2$FullBath - 
-  (train2$HalfBath*0.5) + train2$BsmtFullBath + (train2$BsmtHalfBath*0.5) - 
+train2$TotalRooms <- train2$TotRmsAbvGrd - train2$FullBath -
+  (train2$HalfBath*0.5) + train2$BsmtFullBath + (train2$BsmtHalfBath*0.5) -
   train2$KitchenAbvGr
 
 ggplot(train3[!is.na(train3$SalePrice),], aes(x=TotalRooms, y=Age)) +
@@ -971,7 +991,7 @@ train2$NeighRich[train2$Neighborhood %in% c('MeadowV', 'IDOTRR', 'BrDale')] <- 0
 #Max Quality
 train2$MaxQuality <- train2$ExterQual + (train2$ExterCond*0.5) +
   train2$BsmtQual + (train2$BsmtCond*0.5) + train2$HeatingQC +
-  train2$KitchenQual + train2$FireplaceQu + train2$PoolQC + 
+  train2$KitchenQual + train2$FireplaceQu + train2$PoolQC +
   train2$GarageQual + (train2$GarageCond*0.5) + train2$OverallQual + (train2$OverallCond*0.5)
 
 ggplot(train2[!is.na(train2$SalePrice),], aes(x=MaxQuality, y=SalePrice)) +
@@ -1081,9 +1101,9 @@ set.seed(27042018)
 my_control <-trainControl(method="cv", number=5)
 lassoGrid <- expand.grid(alpha = 1, lambda = seq(0.001,0.1,by = 0.0005))
 
-lasso_mod <- train(x=train12, y=train2$SalePrice[!is.na(train2$SalePrice)], 
-                   method='glmnet', 
-                   trControl= my_control, tuneGrid=lassoGrid) 
+lasso_mod <- train(x=train12, y=train2$SalePrice[!is.na(train2$SalePrice)],
+                   method='glmnet',
+                   trControl= my_control, tuneGrid=lassoGrid)
 lasso_mod$bestTune
 
 min(lasso_mod$results$RMSE)
@@ -1136,8 +1156,8 @@ default_param<-list(
   colsample_bytree=1
 )
 set.seed(27042018)
-xgbcv <- xgb.cv( params = default_param, data = dtrain, nrounds = 700, 
-                 nfold = 5, showsd = T, stratified = T, print_every_n = 40, 
+xgbcv <- xgb.cv( params = default_param, data = dtrain, nrounds = 700,
+                 nfold = 5, showsd = T, stratified = T, print_every_n = 40,
                  early_stopping_rounds = 10, maximize = F)
 
 #train the model using the best iteration found by cross validation
@@ -1169,11 +1189,11 @@ control <- caret::trainControl(method = "repeatedcv",
 # Training ELastic Net Regression model
 model_net <- caret::train(x=train12, y=train2$SalePrice[!is.na(train2$SalePrice)],
                           label= label_train,
-                          method = "glmnet", tuneLength = 10, 
+                          method = "glmnet", tuneLength = 10,
                           trControl = control)
 
 model_net
-model_net$bestTune 
+model_net$bestTune
 
 #predict
 SalePrice_Net <- predict(model_net, test12)
